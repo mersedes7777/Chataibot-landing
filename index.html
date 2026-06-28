@@ -187,6 +187,19 @@
 
   .rev-cta{display:inline-flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:13px 26px;border-radius:13px;font-weight:650;font-size:15px;transition:border-color .2s,transform .15s}
   .rev-cta:hover{border-color:var(--p2);transform:translateY(-2px);color:var(--p2)}
+
+  section{padding:80px 0}
+  @media(max-width:640px){section{padding:56px 0}.wrap{padding:0 18px}}
+  .h2{margin-bottom:14px}
+  .center .lead{margin-left:auto;margin-right:auto}
+  .pain-grid,.feat-grid,.case-grid,.rev-grid,.steps,.ba-grid{margin-top:40px}
+  .lead-form{max-width:440px;margin:44px auto 0;display:flex;flex-direction:column;gap:12px}
+  .lf-input{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--text);font-size:16px;font-family:inherit;outline:none;transition:border-color .2s}
+  .lf-input:focus{border-color:var(--p2)}
+  .lf-input::placeholder{color:var(--faint)}
+  .lf-btn{background:var(--grad);color:#fff;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;transition:transform .15s;font-family:inherit}
+  .lf-btn:hover{transform:translateY(-2px)}
+  .lf-ok{display:none;text-align:center;color:#2BD980;font-weight:600;font-size:15px;padding:10px;background:rgba(43,217,128,.1);border-radius:12px}
   .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
   .reveal.in{opacity:1;transform:none}
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
@@ -483,6 +496,19 @@
   </div>
 </section>
 
+<!-- CTA -->
+<section id="cta" style="padding-top:40px">
+  <div class="cta-band reveal">
+    <div class="blob" style="width:300px;height:300px;background:#fff;opacity:.12;top:-100px;left:-60px"></div>
+    <h2>Попробуйте бесплатно — без обязательств</h2>
+    <p>Сделаем демо под ваш бизнес. Посмотрите, как бот общается с клиентами и принимает заказы. Решите потом.</p>
+    <div class="contact-btns">
+      <a href="https://t.me/Chats_assistent_bot" class="cbtn" id="tg-link">Написать в Telegram →</a>
+    </div>
+    <div class="free">Первое подключение — бесплатно · Подключение за 1 день</div>
+  </div>
+</section>
+
 <!-- REVIEWS -->
 <section id="reviews" style="background:var(--surface)">
   <div class="wrap">
@@ -572,19 +598,6 @@
   </div>
 </section>
 
-<!-- CTA -->
-<section id="cta" style="padding-top:40px">
-  <div class="cta-band reveal">
-    <div class="blob" style="width:300px;height:300px;background:#fff;opacity:.12;top:-100px;left:-60px"></div>
-    <h2>Попробуйте бесплатно — без обязательств</h2>
-    <p>Сделаем демо под ваш бизнес. Посмотрите, как бот общается с клиентами и принимает заказы. Решите потом.</p>
-    <div class="contact-btns">
-      <a href="https://t.me/Chats_assistent_bot" class="cbtn" id="tg-link">Написать в Telegram →</a>
-    </div>
-    <div class="free">Первое подключение — бесплатно · Подключение за 1 день</div>
-  </div>
-</section>
-
 <!-- FAQ -->
 <section>
   <div class="wrap">
@@ -602,6 +615,26 @@
   </div>
 </section>
 
+<!-- LEAD FORM -->
+<section id="form">
+  <div class="wrap">
+    <div class="center">
+      <div class="eyebrow">Заявка</div>
+      <h2 class="h2">Оставьте заявку</h2>
+      <p class="lead">Заполните форму — свяжемся и сделаем демо под ваш бизнес.</p>
+    </div>
+    <div class="lead-form reveal">
+      <input type="text" id="lf-fio" placeholder="ФИО" class="lf-input"/>
+      <input type="text" id="lf-name" placeholder="Имя" class="lf-input"/>
+      <input type="tel" id="lf-phone" placeholder="Номер телефона" class="lf-input"/>
+      <input type="text" id="lf-biz" placeholder="Вид бизнеса (цветы, еда, услуги...)" class="lf-input"/>
+      <input type="text" id="lf-tg" placeholder="Telegram для связи (@username)" class="lf-input"/>
+      <button class="lf-btn" id="lf-submit">Отправить заявку</button>
+      <div class="lf-ok" id="lf-ok">✓ Спасибо! Заявка отправлена, скоро свяжемся.</div>
+    </div>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <div class="wrap">
@@ -615,6 +648,31 @@
   // scroll reveal
   const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
   document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  // форма заявки
+  const lfBtn=document.getElementById('lf-submit');
+  if(lfBtn){lfBtn.addEventListener('click',async()=>{
+    const fio=document.getElementById('lf-fio').value.trim();
+    const name=document.getElementById('lf-name').value.trim();
+    const phone=document.getElementById('lf-phone').value.trim();
+    const biz=document.getElementById('lf-biz').value.trim();
+    const tg=document.getElementById('lf-tg').value.trim();
+    if(!fio||!phone){ alert('Заполните ФИО и номер телефона'); return; }
+    lfBtn.textContent='Отправляю…'; lfBtn.disabled=true;
+    try{
+      await fetch('https://api.neurokaldristal.ru/api/lead-form',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({fio,name,phone,biz,tg})
+      });
+      if(typeof ym!=='undefined'){ try{ ym(0,'reachGoal','lead'); }catch(e){} }
+      document.querySelectorAll('.lf-input').forEach(i=>i.style.display='none');
+      lfBtn.style.display='none';
+      document.getElementById('lf-ok').style.display='block';
+    }catch(e){
+      lfBtn.textContent='Отправить заявку'; lfBtn.disabled=false;
+      alert('Не удалось отправить. Попробуйте ещё раз или напишите в Telegram.');
+    }
+  });}
 
   // живой чат — печатает, отвечает, по кругу
   const script=[
