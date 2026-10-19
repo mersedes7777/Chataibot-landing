@@ -222,6 +222,15 @@ input[type=range]{width:100%;accent-color:#7C6CF8;height:30px;margin:0}
 .form input{min-height:52px;padding:0 14px;border-radius:12px;border:1px solid var(--line2);background:var(--bg);font-size:16.5px;color:var(--text);outline:none}
 .form input:focus{border-color:var(--accent)}
 .form input[aria-invalid="true"]{border-color:var(--bad)}
+.msgr{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.msgr legend{font-size:14.5px;font-weight:700;color:var(--dim);padding:0;margin-bottom:6px}
+.msgr-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form .opt{position:relative;display:block}
+.opt input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.opt span{display:flex;align-items:center;justify-content:center;gap:8px;min-height:50px;border-radius:12px;border:1px solid var(--line2);background:var(--bg);font-weight:700;font-size:16px;color:var(--dim)}
+.opt input:checked + span{border-color:var(--accent);background:var(--accent-bg);color:var(--text)}
+.opt input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.form .field-hint{font-size:13.5px;font-weight:500;color:var(--faint)}
 .form-msg{font-size:15px;font-weight:650;margin:0}
 .form-msg.err{color:var(--bad)}
 .ok-box{display:flex;flex-direction:column;gap:8px;padding:22px;border-radius:16px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.35)}
@@ -474,8 +483,15 @@ footer .inner{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justi
       <form class="form" id="leadForm" novalidate>
         <label for="lf-fio">Как вас зовут<input id="lf-fio" name="fio" autocomplete="name" required></label>
         <label for="lf-phone">Телефон<input id="lf-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+7" required></label>
+        <fieldset class="msgr">
+          <legend>Где вам удобнее общаться</legend>
+          <div class="msgr-opts">
+            <label class="opt"><input type="radio" name="messenger" id="lf-m-tg" value="telegram" checked><span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M21 4 3 11l6 2.5L11.5 20l3-5 5.5 4z"/></svg>Telegram</span></label>
+            <label class="opt"><input type="radio" name="messenger" id="lf-m-wa" value="whatsapp"><span><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg>WhatsApp</span></label>
+          </div>
+        </fieldset>
+        <label for="lf-contact"><span id="lf-contact-txt">Ваш Telegram</span><input id="lf-contact" name="contact" autocomplete="off" placeholder="@username" required><span class="field-hint" id="lf-contact-hint">Ник в Telegram или номер, к которому он привязан</span></label>
         <label for="lf-biz">Чем занимается бизнес<input id="lf-biz" name="biz" placeholder="Например, доставка цветов"></label>
-        <label for="lf-tg">Telegram для связи (необязательно)<input id="lf-tg" name="tg" placeholder="@username"></label>
         <p class="form-msg err" id="lf-err" role="alert" hidden></p>
         <button class="btn primary" type="submit" id="lf-btn">Оставить заявку</button>
         <p class="small">Контакты нужны только чтобы связаться с вами по заявке.</p>
@@ -723,7 +739,23 @@ footer .inner{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justi
 
   // ── заявка: уходит на сервер, оттуда — в вашу Telegram-группу ──
   var form = document.getElementById("leadForm"), btn = document.getElementById("lf-btn"), err = document.getElementById("lf-err");
+  var contact = document.getElementById("lf-contact"), autoFilled = false;
   function showErr(t) { err.textContent = t; err.hidden = !t; }
+  function messenger() { return document.getElementById("lf-m-wa").checked ? "whatsapp" : "telegram"; }
+  function syncMessenger() {
+    var wa = messenger() === "whatsapp", phoneVal = document.getElementById("lf-phone").value.trim();
+    document.getElementById("lf-contact-txt").textContent = wa ? "Номер WhatsApp" : "Ваш Telegram";
+    document.getElementById("lf-contact-hint").textContent = wa ? "Если совпадает с телефоном выше — оставьте как есть" : "Ник в Telegram или номер, к которому он привязан";
+    contact.placeholder = wa ? "+7" : "@username";
+    contact.type = wa ? "tel" : "text";
+    contact.inputMode = wa ? "tel" : "text";
+    if (wa && (!contact.value.trim() || autoFilled)) { contact.value = phoneVal; autoFilled = !!phoneVal; }
+    else if (!wa && autoFilled) { contact.value = ""; autoFilled = false; }
+    contact.removeAttribute("aria-invalid");
+  }
+  document.querySelectorAll('input[name="messenger"]').forEach(function (r) { r.addEventListener("change", syncMessenger); });
+  contact.addEventListener("input", function () { autoFilled = false; });
+  document.getElementById("lf-phone").addEventListener("input", function () { if (messenger() === "whatsapp" && autoFilled) contact.value = this.value; });
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
     var fio = document.getElementById("lf-fio"), phone = document.getElementById("lf-phone");
@@ -732,6 +764,10 @@ footer .inner{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justi
     phone.setAttribute("aria-invalid", digits.length >= 10 ? "false" : "true");
     if (!fio.value.trim()) { showErr("Напишите, как вас зовут"); fio.focus(); return; }
     if (digits.length < 10) { showErr("Проверьте номер телефона"); phone.focus(); return; }
+    var m = messenger(), cv = contact.value.trim();
+    var cOk = m === "whatsapp" ? cv.replace(/\D/g, "").length >= 10 : cv.replace(/^@/, "").length >= 3;
+    contact.setAttribute("aria-invalid", cOk ? "false" : "true");
+    if (!cOk) { showErr(m === "whatsapp" ? "Укажите номер WhatsApp" : "Укажите ваш Telegram — ник или номер"); contact.focus(); return; }
     showErr("");
     if (PREVIEW) { showErr("Это превью: на сайте заявка уйдёт вам в Telegram."); return; }
     btn.disabled = true; btn.textContent = "Отправляю…";
@@ -739,7 +775,7 @@ footer .inner{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justi
       var r = await fetch("https://api.neurokaldristal.ru/api/lead-form", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fio: fio.value.trim(), name: fio.value.trim(), phone: phone.value.trim(),
-          biz: document.getElementById("lf-biz").value.trim(), tg: document.getElementById("lf-tg").value.trim() })
+          biz: document.getElementById("lf-biz").value.trim(), messenger: m, contact: cv, tg: m === "telegram" ? cv : "WhatsApp " + cv })
       });
       if (!r.ok) throw new Error("http " + r.status);
       form.hidden = true;
