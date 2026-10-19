@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080C">
+<meta name="description" content="Как работает AI-бот ChatAIbot: отвечает клиентам в Telegram, оформляет заказы и присылает их вам. Живой пример переписки и расчёт потерь.">
+<meta property="og:title" content="Как работает ChatAIbot">
+<meta property="og:description" content="Бот принимает заказы, пока вы заняты. Посмотрите живой пример переписки.">
+<meta property="og:type" content="website">
+<title>Презентация ChatAIbot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<style>
+/* Layout: вертикальные слайды на высоту экрана — листаются пальцем, колесом или стрелками;
+   фирменный градиент лендинга — только в заголовках и главной кнопке */
+:root{
+  color-scheme: dark;
+  --bg:#07080C; --surface:#0F1218; --surface2:#161A23; --line:#222734; --line2:#2C3242;
+  --text:#F4F6FA; --dim:#9AA2B1; --faint:#6B7383;
+  --p1:#9D4EDD; --p2:#6D5EF6; --p3:#5B8DEF; --ok:#34D399; --warn:#F5B544; --bad:#F87171;
+  --grad:linear-gradient(120deg,#9D4EDD,#6D5EF6 50%,#5B8DEF);
+  --tg-bg:#0E1621; --tg-in:#182533; --tg-out:#2B5278; --tg-head:#17212B; --tg-btn:#1F2E3E;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  --gut-l:max(16px, env(safe-area-inset-left, 0px));
+  --gut-r:max(16px, env(safe-area-inset-right, 0px));
+}
+*{box-sizing:border-box}
+html{scroll-snap-type:y proximity;scroll-behavior:smooth;background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--p3);outline-offset:3px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+
+/* шапка */
+.top{position:fixed;inset:0 0 auto;z-index:30;padding-top:env(safe-area-inset-top,0px);padding-left:var(--gut-l);padding-right:var(--gut-r);background:rgba(7,8,12,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.06)}
+.top-in{max-width:1120px;margin:0 auto;height:60px;display:flex;align-items:center;gap:14px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.2px;text-decoration:none}
+.logo-i{width:32px;height:32px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(109,94,246,.45)}
+.count{margin-left:auto;font-size:13px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums}
+.top .btn-sm{padding:9px 16px;border-radius:11px;font-size:14px;font-weight:700;background:var(--grad);color:#fff;text-decoration:none;white-space:nowrap}
+.progress{position:absolute;left:0;bottom:-1px;height:2px;width:12.5%;background:var(--grad);transition:width .35s ease}
+.dots{position:fixed;right:var(--gut-r);top:50%;transform:translateY(-50%);z-index:25;display:none;flex-direction:column;gap:12px}
+.dots button{width:10px;height:10px;border-radius:5px;border:0;padding:0;background:#2C3242;cursor:pointer;transition:height .25s,background .25s}
+.dots button.on{height:26px;background:var(--p2)}
+@media (min-width:1000px){.dots{display:flex}}
+
+/* слайды */
+.slide{position:relative;min-height:100vh;min-height:100svh;scroll-snap-align:start;display:flex;align-items:center;padding-block:96px 72px;padding-left:var(--gut-l);padding-right:var(--gut-r)}
+.slide:nth-of-type(even){background:linear-gradient(180deg,var(--bg),var(--surface) 30%,var(--bg))}
+.inner{width:100%;max-width:1120px;margin:0 auto;display:grid;gap:36px;min-width:0}
+.two{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:center}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}.slide{padding-block:84px 64px}}
+.eyebrow{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8C7BFA;margin:0 0 14px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-size:clamp(36px,6.2vw,66px);font-weight:900;letter-spacing:-.035em;line-height:1.03}
+h2{font-size:clamp(28px,4.3vw,46px);font-weight:850;letter-spacing:-.03em;line-height:1.08}
+h3{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(16px,1.6vw,19px);color:var(--dim);margin:18px 0 0;max-width:34em}
+.muted{color:var(--dim)}
+.small{font-size:13.5px;color:var(--faint);margin:0}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:0 26px;border-radius:13px;font-weight:750;font-size:16px;text-decoration:none;cursor:pointer;border:1px solid var(--line);background:var(--surface2);transition:transform .15s,border-color .2s,box-shadow .2s}
+.btn:hover{border-color:var(--p2)}
+.btn.primary{background:var(--grad);border:0;color:#fff;box-shadow:0 8px 28px rgba(109,94,246,.4)}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(109,94,246,.55)}
+.next{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:rgba(15,18,24,.8);color:var(--dim);font-size:13px;font-weight:700;cursor:pointer}
+.next:hover{color:var(--text);border-color:var(--line2)}
+.next svg{animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(3px)}}
+.glow{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+.glow::before{content:"";position:absolute;width:620px;height:620px;right:-160px;top:-120px;border-radius:50%;background:radial-gradient(circle,rgba(157,78,221,.32),transparent 65%)}
+.glow::after{content:"";position:absolute;width:520px;height:520px;left:-180px;bottom:-200px;border-radius:50%;background:radial-gradient(circle,rgba(61,214,232,.13),transparent 65%)}
+
+/* обложка */
+.facts{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:26px;font-size:14px;color:var(--dim);font-weight:600}
+.facts span{display:flex;align-items:center;gap:8px}
+.facts i{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+.stack{display:flex;flex-direction:column;gap:12px;max-width:420px;justify-self:end;width:100%}
+.note{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.note:nth-child(2){margin-left:28px}
+.note:nth-child(3){margin-left:56px;border-color:rgba(52,211,153,.35)}
+.note .av{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.note .who{font-size:12.5px;color:var(--faint);font-weight:700;display:flex;gap:8px}
+.note .msg{font-size:14.5px;margin-top:2px}
+@media (max-width:900px){.stack{justify-self:start;max-width:none}.note:nth-child(2){margin-left:18px}.note:nth-child(3){margin-left:36px}}
+
+/* проблема */
+.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.compare{grid-template-columns:minmax(0,1fr)}}
+.lane{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px}
+.lane.good{border-color:rgba(109,94,246,.5);background:linear-gradient(160deg,rgba(109,94,246,.12),var(--surface) 60%)}
+.lane h3{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.tag{font-size:12px;font-weight:800;padding:4px 9px;border-radius:8px;letter-spacing:.02em}
+.tl{display:flex;flex-direction:column;gap:0;position:relative}
+.tl-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;padding:9px 0;position:relative}
+.tl-row time{font-size:13px;font-weight:800;color:var(--faint);font-variant-numeric:tabular-nums;padding-top:1px}
+.tl-row p{margin:0;font-size:14.5px}
+.tl-row p b{font-weight:700}
+.tl-row.bad p{color:var(--bad)}
+.tl-row.win p{color:var(--ok)}
+.pains{display:flex;flex-wrap:wrap;gap:10px}
+.pain{padding:10px 14px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--dim)}
+
+/* живой чат */
+.chat-grid{grid-template-columns:minmax(0,1fr) minmax(0,380px);grid-template-areas:"intro phone" "after phone";align-items:center;row-gap:0}
+.chat-intro{grid-area:intro;align-self:end}
+.chat-after{grid-area:after;align-self:start}
+.chat-grid .phone{grid-area:phone}
+@media (max-width:900px){.chat-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"intro" "phone" "after";row-gap:24px}}
+.niches{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.niche{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);font-size:15px;font-weight:700;cursor:pointer;color:var(--dim)}
+.niche[aria-pressed="true"]{background:var(--grad);border-color:transparent;color:#fff}
+.replay{margin-top:12px;background:none;border:0;color:#8C7BFA;font-weight:700;font-size:14px;cursor:pointer;padding:6px 0;display:inline-flex;gap:6px;align-items:center}
+.steps{list-style:none;margin:22px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:flex;gap:12px;align-items:center;font-size:15px;color:var(--faint);font-weight:600;transition:color .3s}
+.steps li .ck{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s;color:transparent}
+.steps li.on{color:var(--text)}
+.steps li.on .ck{background:var(--ok);border-color:var(--ok);color:#06231a}
+.owner-card{margin-top:20px;background:var(--tg-bg);border:1px solid #22344a;border-radius:16px;padding:14px;opacity:.35;transform:translateY(6px);transition:opacity .45s,transform .45s}
+.owner-card.show{opacity:1;transform:none}
+.owner-card .hd{font-size:12.5px;font-weight:800;color:var(--dim);margin-bottom:8px;display:flex;justify-content:space-between}
+.phone{width:100%;max-width:380px;justify-self:center;height:clamp(500px,74vh,640px);border-radius:40px;border:9px solid #1C2130;background:var(--tg-bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px #2a3142;position:relative}
+@media (max-width:900px){.phone{height:min(560px,68vh);min-height:440px}}
+.tg-head{background:var(--tg-head);display:flex;align-items:center;gap:10px;padding:12px 14px;flex-shrink:0}
+.tg-av{width:38px;height:38px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;flex-shrink:0}
+.tg-name{font-weight:700;font-size:15px;line-height:1.2}
+.tg-st{font-size:12.5px;color:#6AB2F2}
+.tg-msgs{flex:1;overflow-y:auto;padding:12px 10px 14px;display:flex;flex-direction:column;gap:6px;scroll-behavior:smooth;background:radial-gradient(circle at 20% 10%,rgba(91,141,239,.06),transparent 40%),var(--tg-bg)}
+.tg-msgs::-webkit-scrollbar{width:0}
+.b{max-width:84%;padding:7px 10px 5px;border-radius:15px;font-size:14.5px;line-height:1.42;white-space:pre-wrap;word-break:break-word;animation:pop .28s ease-out both}
+.b.in{align-self:flex-start;background:var(--tg-in);border-bottom-left-radius:5px}
+.b.out{align-self:flex-end;background:var(--tg-out);border-bottom-right-radius:5px}
+.b .t{display:block;text-align:right;font-size:11px;color:rgba(255,255,255,.45);margin-top:2px}
+.b.album{padding:3px;width:84%}
+.b.album .ph{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;border-radius:12px;overflow:hidden}
+.b.album .ph svg{display:block;width:100%;height:auto;aspect-ratio:1}
+.b.album .cap{padding:6px 7px 2px}
+.b.sum{border-left:3px solid #6AB2F2}
+.typing{align-self:flex-start;background:var(--tg-in);border-radius:15px;border-bottom-left-radius:5px;padding:11px 14px;display:flex;gap:4px}
+.typing i{width:7px;height:7px;border-radius:50%;background:#6c7b8b;animation:dot 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,60%,100%{opacity:.35;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.tg-input{flex-shrink:0;background:var(--tg-head);padding:10px 14px;display:flex;align-items:center;gap:10px;color:#6c7b8b;font-size:14.5px}
+.tg-input span{flex:1}
+.kb{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px}
+.kb span{background:var(--tg-btn);border-radius:8px;padding:8px 4px;text-align:center;font-size:13px;font-weight:600}
+
+/* владелец */
+.cards3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+@media (max-width:980px){.cards3{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card p{margin:0}
+.mock{background:var(--tg-bg);border-radius:14px;padding:12px;border:1px solid #1f2c3d}
+.mini-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini-kpis div{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.mini-kpis small{display:block;font-size:11.5px;color:var(--faint);font-weight:700}
+.mini-kpis b{font-size:19px;font-weight:850;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.bars{display:flex;align-items:flex-end;gap:4px;height:70px;padding-top:6px;border-bottom:1px solid var(--line2)}
+.bars span{flex:1;border-radius:3px 3px 0 0;background:var(--p2)}
+.bars span:last-child{background:#9FB4F5}
+.flow{display:flex;flex-direction:column;gap:8px}
+.flow-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start}
+.chip{font-size:12px;font-weight:800;padding:5px 9px;border-radius:8px;white-space:nowrap}
+.flow-row p{font-size:13.5px;background:var(--tg-in);padding:7px 10px;border-radius:12px;border-bottom-left-radius:4px}
+.feat{display:flex;flex-wrap:wrap;gap:10px 26px;font-size:14.5px;color:var(--dim);font-weight:600}
+.feat span{display:flex;gap:8px;align-items:center}
+.feat span::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--p3)}
+.pill-ex{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);padding:3px 7px;border-radius:6px;margin-left:auto}
+
+/* режимы */
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:5px;border-radius:15px;background:var(--surface);border:1px solid var(--line)}
+.seg button{min-height:44px;padding:0 18px;border-radius:11px;border:0;background:transparent;font-size:15px;font-weight:700;color:var(--dim);cursor:pointer;display:flex;align-items:center;gap:8px}
+.seg button[aria-pressed="true"]{background:var(--surface2);color:var(--text);box-shadow:inset 0 0 0 1px var(--line2)}
+.seg .rec{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;background:rgba(109,94,246,.18);color:#A99CFF}
+.scene{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:22px;align-items:start}
+@media (max-width:820px){.scene{grid-template-columns:minmax(0,1fr)}}
+.draft{border:1.5px dashed var(--warn);background:rgba(245,181,68,.06);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.draft .lbl{font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--warn)}
+.fake-btns{display:flex;gap:8px;flex-wrap:wrap}
+.fake-btns span{padding:8px 14px;border-radius:10px;font-size:13.5px;font-weight:700;background:var(--surface2);border:1px solid var(--line)}
+.fake-btns span:first-child{background:var(--p2);border-color:var(--p2);color:#fff}
+.rules{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.rules span{font-size:13px;font-weight:700;padding:6px 11px;border-radius:9px;border:1px solid rgba(109,94,246,.45);color:#B3A8FF;background:rgba(109,94,246,.08)}
+.mode-pane[hidden]{display:none!important}
+
+/* калькулятор */
+.calc{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:18px;align-items:stretch}
+@media (max-width:860px){.calc{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
+.field:first-child{border-top:0;padding-top:0}
+.field label{display:flex;justify-content:space-between;gap:12px;font-size:15px;font-weight:650}
+.field output{font-weight:850;font-variant-numeric:tabular-nums;white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--p2);height:28px;margin:0}
+.result{border-radius:20px;padding:26px;background:linear-gradient(150deg,rgba(157,78,221,.22),rgba(91,141,239,.10) 60%,var(--surface));border:1px solid rgba(109,94,246,.45);display:flex;flex-direction:column;gap:10px;justify-content:center}
+.result .big{font-size:clamp(38px,6vw,58px);font-weight:900;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums}
+.result .formula{font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* запуск */
+.steps4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0;counter-reset:s}
+@media (max-width:900px){.steps4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.steps4{grid-template-columns:minmax(0,1fr)}}
+.steps4 li{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px;counter-increment:s}
+.steps4 li::before{content:counter(s);width:34px;height:34px;border-radius:10px;background:var(--grad);color:#fff;font-weight:850;display:flex;align-items:center;justify-content:center}
+.steps4 p{margin:0;font-size:14.5px;color:var(--dim)}
+.chans{display:flex;flex-wrap:wrap;gap:12px}
+.chan{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-weight:700;font-size:15px}
+.chan small{display:block;font-weight:500;color:var(--faint);font-size:12.5px}
+.chan .ci{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:850;font-size:12.5px}
+.need{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;font-size:14.5px;color:var(--dim)}
+.need b{color:var(--text)}
+
+/* финал */
+.final{border-radius:28px;padding:clamp(28px,5vw,56px);background:linear-gradient(140deg,rgba(157,78,221,.3),rgba(109,94,246,.18) 45%,rgba(91,141,239,.12)),var(--surface);border:1px solid rgba(109,94,246,.45);text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.final .lead{margin-inline:auto}
+.handle{margin-top:16px;font-size:14px;color:var(--dim);user-select:all}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <a class="logo" href="#s1" aria-label="ChatAIbot — к началу"><span class="logo-i"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H10l-6 4z"/></svg></span>ChatAIbot</a>
+    <span class="count" id="count" aria-live="polite">1 / 8</span>
+    <a class="btn-sm" href="https://t.me/Chats_assistent_bot" target="_blank" rel="noopener">Связаться</a>
+  </div>
+  <div class="progress" id="progress"></div>
+</header>
+<nav class="dots" id="dots" aria-label="Слайды"></nav>
+
+<main>
+<!-- 1. Обложка -->
+<section class="slide" id="s1" data-title="Начало">
+  <div class="glow"></div>
+  <div class="inner two">
+    <div>
+      <p class="eyebrow">Как работает ChatAIbot</p>
+      <h1>Бот принимает заказы, <span class="grad">пока вы заняты</span></h1>
+      <p class="lead">AI-ассистент отвечает вашим клиентам в Telegram за секунды, показывает товары с фото, оформляет заказ и присылает его вам. Зовёт человека, когда нужен человек.</p>
+      <div class="btns">
+        <button class="btn primary" type="button" data-go="3">Показать, как это выглядит</button>
+      </div>
+      <div class="facts"><span><i></i>Отвечает круглосуточно</span><span><i></i>Запуск за 1 день</span><span><i></i>Первое подключение бесплатно</span></div>
+    </div>
+    <div class="stack" aria-label="Пример: заказ ночью">
+      <div class="note"><span class="av" style="background:#2B5278">О</span><div><div class="who">Покупатель <span>23:41</span></div><div class="msg">Здравствуйте! Есть пионы на завтра к обеду?</div></div></div>
+      <div class="note"><span class="av" style="background:var(--grad)">AI</span><div><div class="who">Ваш бот <span>23:41</span></div><div class="msg">Есть! 11 пионов — 4 500 ₽, отправляю фото. Куда и к какому времени привезти?</div></div></div>
+      <div class="note"><span class="av" style="background:rgba(52,211,153,.16);color:var(--ok)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span><div><div class="who">Вам в Telegram <span>23:44</span></div><div class="msg"><b>Новый заказ №2215</b> · 5 000 ₽ · завтра 11:00–12:00</div></div></div>
+    </div>
+  </div>
+  <button class="next" type="button" data-go="2">Дальше <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+</section>
+
+<!-- 2. Проблема -->
+<section class="slide" id="s2" data-title="Проблема">
+  <div class="inner">
+    <div>
+      <p class="eyebrow">Знакомо?</p>
+      <h2>Клиент пишет в 23:40. Утром вы отвечаете — а он уже купил у другого</h2>
+    </div>
+    <div class="compare">
+      <div class="lane">
+        <h3><span class="tag" style="background:rgba(248,113,113,.14);color:var(--bad)">Без бота</span>Ответ утром</h3>
+        <div class="tl">
+          <div class="tl-row"><time>23:40</time><p>Клиент: «Есть пионы на завтра?»</p></div>
+          <div class="tl-row"><time>23:55</time><p>Тишина. Клиент пишет ещё в два магазина</p></div>
+          <div class="tl-row"><time>09:20</time><p>Вы: «Доброе утро! Да, есть»</p></div>
+          <div class="tl-row bad"><time>09:31</time><p>Клиент: «Спасибо, уже заказали»</p></div>
+        </div>
+      </div>
+      <div class="lane good">
+        <h3><span class="tag" style="background:rgba(109,94,246,.2);color:#B3A8FF">С ботом</span>Ответ сразу</h3>
+        <div class="tl">
+          <div class="tl-row"><time>23:40</time><p>Клиент: «Есть пионы на завтра?»</p></div>
+          <div class="tl-row"><time>23:40</time><p>Бот: фото, цена, «Куда привезти?»</p></div>
+          <div class="tl-row"><time>23:44</time><p>Бот собрал адрес, время, открытку — заказ оформлен</p></div>
+          <div class="tl-row win"><time>09:00</time><p>Вы открываете Telegram: заказ ждёт подтверждения</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="pains" aria-label="Где теряются клиенты">
+      <span class="pain">Ночью и в выходные никто не отвечает</span>
+      <span class="pain">Днём менеджер занят — ответ через час</span>
+      <span class="pain">Одни и те же вопросы про цены и доставку</span>
+      <span class="pain">Заказы теряются в переписках</span>
+    </div>
+  </div>
+  <button class="next" type="button" data-go="3">Дальше <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+</section>
+
+<!-- 3. Живой чат -->
+<section class="slide" id="s3" data-title="Живой чат">
+  <div class="inner chat-grid">
+    <div class="chat-intro">
+      <p class="eyebrow">Живая демонстрация · пример переписки</p>
+      <h2>Так бота видит ваш покупатель</h2>
+      <div class="niches" role="group" aria-label="Выберите бизнес">
+        <button class="niche" type="button" data-niche="flowers" aria-pressed="true">Цветы</button>
+        <button class="niche" type="button" data-niche="food" aria-pressed="false">Еда и доставка</button>
+        <button class="niche" type="button" data-niche="tech" aria-pressed="false">Техника</button>
+      </div>
+      <button class="replay" type="button" id="replay"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>Показать ещё раз</button>
+    </div>
+    <div class="chat-after">
+      <ul class="steps" id="steps">
+        <li data-step="1"><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>Отвечает за секунды, днём и ночью</li>
+        <li data-step="2"><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>Показывает товар с фото и ценой из вашего каталога</li>
+        <li data-step="3"><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>Уточняет доставку, адрес, время и оплату</li>
+        <li data-step="4"><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>Собирает заказ и сверяет сумму с клиентом</li>
+        <li data-step="5"><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>Присылает готовый заказ вам</li>
+      </ul>
+      <div class="owner-card" id="ownerCard" aria-live="polite">
+        <div class="hd"><span>Вам в рабочую группу Telegram</span><span id="ownerTime">23:44</span></div>
+        <div id="ownerText" style="font-size:14px;white-space:pre-wrap"></div>
+        <div class="kb"><span>✅ Принять</span><span>❌ Отклонить</span></div>
+      </div>
+    </div>
+    <div class="phone" aria-label="Телефон покупателя">
+      <div class="tg-head">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6AB2F2" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>
+        <span class="tg-av" id="shopAv">ЦД</span>
+        <div style="min-width:0"><div class="tg-name" id="shopName">Цветы у дома</div><div class="tg-st">бот · онлайн</div></div>
+      </div>
+      <div class="tg-msgs" id="msgs"></div>
+      <div class="tg-input"><span>Сообщение</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+    </div>
+  </div>
+  <button class="next" type="button" data-go="4">Дальше <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+</section>
+
+<!-- 4. Что видит владелец -->
+<section class="slide" id="s4" data-title="Для владельца">
+  <div class="inner">
+    <div>
+      <p class="eyebrow">Для владельца</p>
+      <h2>А это видите вы</h2>
+      <p class="lead">Заказы приходят готовыми, статусы покупателю бот пишет сам, а всё остальное — в личном кабинете с телефона.</p>
+    </div>
+    <div class="cards3">
+      <article class="card">
+        <h3>Заказ — сразу в Telegram</h3>
+        <div class="mock">
+          <div style="font-size:12px;font-weight:800;color:#6AB2F2;margin-bottom:4px">Цветы у дома · заказы</div>
+          <div style="font-size:14px;white-space:pre-wrap;line-height:1.45">🛍 <b>Новый заказ №2215</b>
+Пионы 11 шт — 4 500 ₽
+Доставка — 500 ₽
+Завтра 11:00–12:00
+Ленина 15, кв 4 · Ольга
+<b>Итого: 5 000 ₽</b></div>
+          <div class="kb"><span>✅ Принять</span><span>❌ Отклонить</span></div>
+        </div>
+        <p class="muted" style="font-size:14.5px">Принимаете в один клик прямо в рабочей группе.</p>
+      </article>
+      <article class="card">
+        <div style="display:flex;align-items:center;gap:8px"><h3>Кабинет с телефона</h3><span class="pill-ex">пример</span></div>
+        <div class="mock" style="background:var(--bg);border-color:var(--line)">
+          <div style="font-weight:850;font-size:17px;margin-bottom:10px">Сегодня</div>
+          <div class="mini-kpis">
+            <div><small>Заказов</small><b>7</b></div>
+            <div><small>Выручка</small><b>61 300 ₽</b></div>
+            <div><small>Средний чек</small><b>8 757 ₽</b></div>
+            <div><small>Диалогов</small><b>19</b></div>
+          </div>
+          <div class="bars" aria-hidden="true" id="miniBars"></div>
+        </div>
+        <p class="muted" style="font-size:14.5px">Выручка, заказы, переписки и аналитика — без звонков менеджеру.</p>
+      </article>
+      <article class="card">
+        <h3>Покупатель сам знает статус</h3>
+        <div class="flow">
+          <div class="flow-row"><span class="chip" style="background:rgba(109,94,246,.2);color:#B3A8FF">Принят</span><p>Ваш заказ №2215 принят! Скоро начнём собирать.</p></div>
+          <div class="flow-row"><span class="chip" style="background:rgba(245,181,68,.16);color:var(--warn)">Собирается</span><p>Собираем ваш букет 💐</p></div>
+          <div class="flow-row"><span class="chip" style="background:rgba(125,211,252,.14);color:#7DD3FC">В пути</span><p>Курьер выехал, будет в течение часа.</p></div>
+          <div class="flow-row"><span class="chip" style="background:rgba(52,211,153,.14);color:var(--ok)">Выполнен</span><p>Спасибо за заказ! Будем рады снова 🙂</p></div>
+        </div>
+        <p class="muted" style="font-size:14.5px">Вы нажимаете кнопку статуса — бот сам пишет покупателю.</p>
+      </article>
+    </div>
+    <div class="feat">
+      <span>Все переписки в одном месте</span><span>Можно ответить самому — бот замолчит</span><span>Выгрузка заказов в Excel</span><span>Что покупают и в какие часы пишут</span>
+    </div>
+  </div>
+  <button class="next" type="button" data-go="5">Дальше <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+</section>
+
+<!-- 5. Режимы -->
+<section class="slide" id="s5" data-title="Режимы">
+  <div class="inner">
+    <div>
+      <p class="eyebrow">Контроль</p>
+      <h2>Вы решаете, сколько доверять боту</h2>
+      <p class="lead">Покупатель спрашивает про скидку. Переключите режим и посмотрите, что сделает бот.</p>
+    </div>
+    <div>
+      <div class="seg" role="group" aria-label="Режим бота">
+        <button type="button" data-mode="trainee" aria-pressed="false">Стажёр</button>
+        <button type="button" data-mode="mixed" aria-pressed="true">Смешанный <span class="rec">советуем</span></button>
+        <button type="button" data-mode="auto" aria-pressed="false">Автопилот</button>
+      </div>
+      <div class="scene">
+        <div class="mock" style="display:flex;flex-direction:column;gap:6px;padding:14px">
+          <div style="font-size:12px;font-weight:800;color:var(--dim);margin-bottom:4px">Покупатель пишет</div>
+          <div class="b out" style="animation:none">Беру три букета пионов. А скидку сделаете?<span class="t">19:20</span></div>
+          <div class="mode-pane" data-pane="auto" hidden><div class="b in" style="animation:none;margin-top:6px">На заказ от трёх букетов действует скидка 5%: итого 12 825 ₽ вместо 13 500 ₽. Оформляем?<span class="t">19:20</span></div></div>
+          <div class="mode-pane" data-pane="mixed"><div style="font-size:13px;color:var(--faint);margin-top:8px;text-align:center">Покупатель ждёт ответа — бот не обещает лишнего</div></div>
+          <div class="mode-pane" data-pane="trainee" hidden><div style="font-size:13px;color:var(--faint);margin-top:8px;text-align:center">Ответ уйдёт, когда вы его одобрите</div></div>
+        </div>
+        <div>
+          <div class="mode-pane" data-pane="trainee" hidden>
+            <div class="draft"><span class="lbl">Черновик бота · вам на одобрение</span><span>Да, на три букета сделаем скидку 10%: итого 12 150 ₽. Оформляем?</span><div class="fake-btns"><span>Отправить</span><span>Изменить</span></div></div>
+            <p class="muted" style="font-size:15px;margin:14px 0 0">Каждый ответ сначала проходит через вас — в кабинете или прямо в Telegram. Удобно в первые дни, пока привыкаете.</p>
+          </div>
+          <div class="mode-pane" data-pane="mixed">
+            <div class="draft"><span class="lbl">Черновик бота · вам на одобрение</span><span>Да, на три букета сделаем скидку 10%: итого 12 150 ₽. Оформляем?</span><div class="fake-btns"><span>Отправить</span><span>Изменить</span></div></div>
+            <p class="muted" style="font-size:15px;margin:14px 0 6px">Простое — цены, наличие, доставку — бот закрывает сам. Сложное присылает вам:</p>
+            <div class="rules"><span>Скидки и торг</span><span>Доставка вне условий</span><span>Товара нет в каталоге</span><span>Жалобы и возвраты</span><span>Крупный заказ</span></div>
+            <p class="small" style="margin-top:12px">Если вы не ответили за 10 минут, бот напишет покупателю «Уточняю детали, вернусь через пару минут».</p>
+          </div>
+          <div class="mode-pane" data-pane="auto" hidden>
+            <p class="muted" style="font-size:15px;margin:0">Бот отвечает сам — по правилам, которые вы ему задали: цены, скидки, условия доставки.</p>
+            <p class="muted" style="font-size:15px;margin:12px 0 0">Вам приходят только готовые заказы и просьбы позвать человека.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button class="next" type="button" data-go="6">Дальше <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+</section>
+
+<!-- 6. Калькулятор -->
+<section class="slide" id="s6" data-title="Калькулятор">
+  <div class="inner">
+    <div>
+      <p class="eyebrow">Посчитаем на ваших цифрах</p>
+      <h2>Сколько денег уходит без ответа</h2>
+    </div>
+    <div class="calc">
+      <div class="card" style="gap:0">
+        <div class="field"><label for="c-msgs">Сколько клиентов пишут в день <output id="o-msgs" for="c-msgs">20</output></label><input type="range" id="c-msgs" min="5" max="300" step="5" value="20"></div>
+        <div class="field"><label for="c-miss">Из них ждут ответа дольше часа или пишут ночью <output id="o-miss" for="c-miss">25%</output></label><input type="range" id="c-miss" min="5" max="80" step="5" value="25"></div>
+        <div class="field"><label for="c-conv">Сколько из них купили бы при быстром ответе <output id="o-conv" for="c-conv">20%</output></label><input type="range" id="c-conv" min="5" max="80" step="5" value="20"></div>
+        <div class="field"><label for="c-check">Средний чек <output id="o-check" for="c-check">3 000 ₽</output></label><input type="range" id="c-check" min="500" max="30000" step="500" value="3000"></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="muted" style="font-weight:700">Уходит к конкурентам за месяц</span>
+        <span class="big"><span class="grad" id="lost">90 000 ₽</span></span>
+        <span style="font-size:16px;font-weight:700" id="lostOrders">Это около 30 заказов</span>
+        <span class="formula" id="formula"></span>
+        <span class="small" style="margin-top:6px">Прикидка по вашим цифрам — подвиньте ползунки вместе с клиентом.</span>
+      </div>
+    </div>
+  </div>
+  <button class="next" type="button" data-go="7">Дальше <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+</section>
+
+<!-- 7. Запуск -->
+<section class="slide" id="s7" data-title="Запуск">
+  <div class="inner">
+    <div>
+      <p class="eyebrow">Без программистов</p>
+      <h2>Запуск за 1 день</h2>
+    </div>
+    <ol class="steps4">
+      <li><h3>Присылаете каталог</h3><p>Прайс в Excel, фото меню или ссылку на сайт. Хватит 15 минут.</p></li>
+      <li><h3>Настраиваем бота</h3><p>Под ваш бизнес: товары с фото, доставка, оплата, часы работы, тон общения.</p></li>
+      <li><h3>Тестируете</h3><p>Пишете боту как покупатель. Первые дни можно держать режим «Стажёр».</p></li>
+      <li><h3>Бот работает</h3><p>Круглосуточно. Заказы — в вашу группу, всё остальное — в кабинете.</p></li>
+    </ol>
+    <div class="chans">
+      <div class="chan"><span class="ci" style="background:rgba(41,169,235,.16);color:#29A9EB">TG</span><div>Telegram-бот<small>отдельный бот вашего магазина</small></div></div>
+      <div class="chan"><span class="ci" style="background:rgba(41,169,235,.16);color:#29A9EB">TB</span><div>Telegram Business<small>отвечает от вашего аккаунта</small></div></div>
+      <div class="chan"><span class="ci" style="background:rgba(0,119,255,.16);color:#3D8BFF">VK</span><div>ВКонтакте<small>сообщения сообщества</small></div></div>
+    </div>
+    <div class="need"><b>Что нужно от вас:</b><span>каталог с ценами</span><span>условия доставки и оплаты</span><span>Telegram-группа для заказов</span></div>
+  </div>
+  <button class="next" type="button" data-go="8">Дальше <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+</section>
+
+<!-- 8. Финал -->
+<section class="slide" id="s8" data-title="Попробовать">
+  <div class="glow"></div>
+  <div class="inner">
+    <div class="final">
+      <p class="eyebrow" style="margin-bottom:8px">Попробуйте без обязательств</p>
+      <h2>Первое подключение — <span class="grad">бесплатно</span></h2>
+      <p class="lead">Сделаем демо-бота на вашем каталоге. Посмотрите, как он отвечает вашим клиентам, и решите, подходит ли он вам.</p>
+      <div class="btns" style="justify-content:center">
+        <a class="btn primary" href="https://t.me/Chats_assistent_bot" target="_blank" rel="noopener">Написать в Telegram</a>
+        <button class="btn" type="button" data-go="1">К началу</button>
+      </div>
+      <p class="handle">Telegram: @Chats_assistent_bot</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var count = document.getElementById("count");
+  var progress = document.getElementById("progress");
+  var dotsBox = document.getElementById("dots");
+  var cur = 0;
+
+  // ── навигация по слайдам ──
+  slides.forEach(function (s, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("aria-label", (i + 1) + ". " + s.getAttribute("data-title"));
+    b.addEventListener("click", function () { go(i); });
+    dotsBox.appendChild(b);
+  });
+  var dots = dotsBox.querySelectorAll("button");
+  function go(i) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    slides[i].scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+  function update() {
+    var mark = window.innerHeight * 0.42, idx = 0;
+    slides.forEach(function (s, i) { if (s.getBoundingClientRect().top <= mark) idx = i; });
+    if (idx !== cur || !count.textContent) { cur = idx; }
+    count.textContent = (cur + 1) + " / " + slides.length;
+    progress.style.width = ((cur + 1) / slides.length * 100) + "%";
+    dots.forEach(function (d, i) { d.classList.toggle("on", i === cur); d.setAttribute("aria-current", i === cur ? "true" : "false"); });
+  }
+  var ticking = false;
+  window.addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; update(); }); } }, { passive: true });
+  window.addEventListener("resize", update);
+  document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { go(Number(b.getAttribute("data-go")) - 1); }); });
+  document.addEventListener("keydown", function (e) {
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === "ArrowRight" || (e.key === " " && !(t && t.tagName === "BUTTON"))) { e.preventDefault(); go(cur + 1); }
+    else if (e.key === "ArrowUp" || e.key === "PageUp" || e.key === "ArrowLeft") { e.preventDefault(); go(cur - 1); }
+    else if (e.key === "Home") { e.preventDefault(); go(0); }
+    else if (e.key === "End") { e.preventDefault(); go(slides.length - 1); }
+  });
+  update();
+
+  // ── картинки товаров (рисуем сами, без внешних файлов) ──
+  function svg(inner, bg1, bg2) {
+    var id = "g" + Math.random().toString(36).slice(2, 8);
+    return '<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + bg1 + '"/><stop offset="1" stop-color="' + bg2 + '"/></linearGradient></defs><rect width="100" height="100" fill="url(#' + id + ')"/>' + inner + "</svg>";
+  }
+  function flower(petal, dark, center) {
+    var s = '<path d="M50 60 L50 98 M50 78 Q38 70 30 74 M50 84 Q62 76 70 80" stroke="#3E7D4A" stroke-width="4" fill="none" stroke-linecap="round"/>';
+    [[50, 42, 17], [33, 50, 14], [67, 50, 14], [40, 30, 12], [60, 30, 12], [50, 56, 12]].forEach(function (c) {
+      s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="' + c[2] + '" fill="' + petal + '" stroke="' + dark + '" stroke-width="2"/>';
+    });
+    return s + '<circle cx="50" cy="42" r="6" fill="' + center + '"/>';
+  }
+  function roses() {
+    var s = '<path d="M50 62 L50 98" stroke="#3E7D4A" stroke-width="4"/>';
+    [[38, 38], [62, 38], [50, 26], [50, 50], [30, 54], [70, 54]].forEach(function (c) {
+      s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="11" fill="#D7263D" stroke="#8E0E21" stroke-width="2"/><path d="M' + (c[0] - 5) + " " + c[1] + " q5 -7 10 0" + '" stroke="#8E0E21" stroke-width="1.6" fill="none"/>';
+    });
+    return s;
+  }
+  function pizza() {
+    var s = '<circle cx="50" cy="50" r="38" fill="#E3A24A"/><circle cx="50" cy="50" r="31" fill="#F3CE7A"/>';
+    [[38, 40], [60, 36], [52, 56], [36, 60], [66, 58], [48, 28], [70, 45]].forEach(function (c) { s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="5.5" fill="#B5302A"/>'; });
+    return s + '<path d="M50 12 L50 88 M12 50 L88 50" stroke="#C9893A" stroke-width="1.5" opacity=".6"/>';
+  }
+  function sushi() {
+    var s = "";
+    [[30, 38], [70, 38], [50, 68]].forEach(function (c) { s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="17" fill="#15171c"/><circle cx="' + c[0] + '" cy="' + c[1] + '" r="13" fill="#F4F1EA"/><circle cx="' + c[0] + '" cy="' + c[1] + '" r="6" fill="#F08A5D"/>'; });
+    return s;
+  }
+  function margarita() {
+    var s = '<circle cx="50" cy="50" r="38" fill="#E3A24A"/><circle cx="50" cy="50" r="31" fill="#D9472B"/>';
+    [[40, 40], [60, 42], [50, 60], [36, 58], [64, 60]].forEach(function (c) { s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="8" fill="#FBEFD2"/>'; });
+    return s + '<ellipse cx="52" cy="50" rx="5" ry="3" fill="#3E7D4A"/><ellipse cx="44" cy="48" rx="4" ry="2.5" fill="#3E7D4A"/>';
+  }
+  function phone(body) {
+    return '<rect x="30" y="12" width="40" height="76" rx="9" fill="' + body + '" stroke="rgba(255,255,255,.35)" stroke-width="1.5"/><rect x="35" y="18" width="16" height="16" rx="5" fill="rgba(0,0,0,.28)"/><circle cx="40" cy="23" r="3.4" fill="#0b0d12"/><circle cx="46" cy="29" r="3.4" fill="#0b0d12"/>';
+  }
+  var PICS = {
+    peony: svg(flower("#F7A8C4", "#C2537E", "#FFE08A"), "#3a1f2e", "#1d1420"),
+    classic: svg(flower("#FFD6A5", "#C98B4A", "#F7A8C4"), "#33281d", "#18140f"),
+    roses: svg(roses(), "#2a1418", "#140b0d"),
+    set: svg(sushi(), "#1f2a33", "#121820"),
+    pepperoni: svg(pizza(), "#2b2117", "#15110c"),
+    margarita: svg(margarita(), "#2a1d17", "#140f0c"),
+    black: svg(phone("#2A2D33"), "#1b2030", "#0f121a"),
+    blue: svg(phone("#7BA7D9"), "#1b2030", "#0f121a"),
+    pink: svg(phone("#F2C6D2"), "#1b2030", "#0f121a")
+  };
+
+  // ── сценарии переписки ──
+  var NICHES = {
+    flowers: {
+      shop: "Цветы у дома", av: "ЦД", time: "23:44",
+      owner: "🛍 <b>Новый заказ №2215</b>\nПионы 11 шт — 4 500 ₽\nДоставка — 500 ₽ · завтра 11:00–12:00\nЛенина 15, кв 4 · Ольга\n<b>Итого: 5 000 ₽</b>",
+      msgs: [
+        { u: "Здравствуйте! Нужен букет маме на день рождения, бюджет до 5 000", t: "23:40" },
+        { b: "Здравствуйте! 🌸 Под ваш бюджет есть три варианта:", pics: ["peony", "classic", "roses"], cap: "Пионы 11 шт — 4 500 ₽\nБукет Классика — 3 900 ₽\nРозы 25 шт — 3 500 ₽\nКакой нравится?", t: "23:40", step: 2, first: 1 },
+        { u: "Пионы! Можно привезти завтра к 12?", t: "23:41" },
+        { b: "Да, привезём завтра с 11:00 до 12:00. Доставка по городу — 500 ₽. Подскажите адрес и имя получателя. Подписать открытку?", t: "23:41", step: 3 },
+        { u: "Ленина 15, кв 4, Ольга. Открытка: «С днём рождения, мама!»", t: "23:43" },
+        { b: "Ваш заказ:\nПионы 11 шт — 4 500 ₽\nДоставка — 500 ₽\nЗавтра, 11:00–12:00 · Ленина 15, кв 4\nОткрытка: «С днём рождения, мама!»\nИтого: 5 000 ₽\nВсё верно?", t: "23:43", step: 4, sum: 1 },
+        { u: "Да, всё верно", t: "23:44" },
+        { b: "Готово! Заказ №2215 принят ✅ Мы подтвердим его утром и напишем, когда курьер выедет.", t: "23:44", step: 5, done: 1 }
+      ]
+    },
+    food: {
+      shop: "Суши и Пицца", av: "СП", time: "19:06",
+      owner: "🛍 <b>Новый заказ №3021</b>\nСет Филадельфия — 1 290 ₽\nПепперони 33 см — 650 ₽\nСадовая 8, подъезд 2 · картой курьеру\n<b>Итого: 1 940 ₽</b>",
+      msgs: [
+        { u: "Добрый вечер! Что взять на компанию из четырёх человек?", t: "19:02" },
+        { b: "Добрый вечер! На четверых обычно берут сет и пару пицц. Например:", pics: ["set", "pepperoni", "margarita"], cap: "Сет Филадельфия, 32 шт — 1 290 ₽\nПепперони 33 см — 650 ₽\nМаргарита 33 см — 550 ₽", t: "19:02", step: 2, first: 1 },
+        { u: "Давайте сет и пепперони. Долго ждать?", t: "19:03" },
+        { b: "Привезём за 45–60 минут. Доставка бесплатно от 1 500 ₽ — у вас 1 940 ₽, так что бесплатно 🙂 Куда везти?", t: "19:03", step: 3 },
+        { u: "Садовая 8, подъезд 2. Оплачу картой курьеру", t: "19:05" },
+        { b: "Ваш заказ:\nСет Филадельфия — 1 290 ₽\nПепперони 33 см — 650 ₽\nДоставка — бесплатно\nСадовая 8, подъезд 2 · картой курьеру\nИтого: 1 940 ₽\nОформляем?", t: "19:05", step: 4, sum: 1 },
+        { u: "Да", t: "19:06" },
+        { b: "Заказ №3021 принят ✅ Курьер позвонит за 10 минут до приезда.", t: "19:06", step: 5, done: 1 }
+      ]
+    },
+    tech: {
+      shop: "Техно Точка", av: "ТТ", time: "14:23",
+      owner: "🛍 <b>Новый заказ №58</b>\niPhone 15 128 ГБ, синий — 69 990 ₽\nСамовывоз сегодня до 21:00\nАлексей\n<b>Итого: 69 990 ₽</b>",
+      msgs: [
+        { u: "Есть iPhone 15 на 128 в наличии? Какие цвета?", t: "14:20" },
+        { b: "Да, iPhone 15 128 ГБ есть в наличии — 69 990 ₽, новый, официальная гарантия. Цвета:", pics: ["black", "blue", "pink"], cap: "Чёрный · синий · розовый\nКакой вам?", t: "14:20", step: 2, first: 1 },
+        { u: "Синий. Можно забрать сегодня?", t: "14:21" },
+        { b: "Можно! Отложу синий для вас до 21:00. Самовывоз: ул. Пушкина, 10. Как вас зовут?", t: "14:21", step: 3 },
+        { u: "Алексей", t: "14:22" },
+        { b: "Ваш заказ:\niPhone 15 128 ГБ, синий — 69 990 ₽\nСамовывоз сегодня до 21:00, ул. Пушкина, 10\nОплата на месте картой или наличными\nВсё верно?", t: "14:22", step: 4, sum: 1 },
+        { u: "Да", t: "14:23" },
+        { b: "Заказ №58 принят ✅ Телефон отложен на ваше имя. Ждём вас сегодня до 21:00!", t: "14:23", step: 5, done: 1 }
+      ]
+    }
+  };
+
+  var msgsBox = document.getElementById("msgs");
+  var stepsEls = document.querySelectorAll("#steps li");
+  var ownerCard = document.getElementById("ownerCard");
+  var ownerText = document.getElementById("ownerText");
+  var niche = "flowers", runId = 0, played = false;
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function bubble(m) {
+    var d = document.createElement("div");
+    if (m.u) { d.className = "b out"; d.innerHTML = esc(m.u) + '<span class="t">' + m.t + " ✓✓</span>"; }
+    else if (m.pics) { d.className = "b in album"; d.innerHTML = '<div class="ph">' + m.pics.map(function (p) { return PICS[p]; }).join("") + '</div><div class="cap">' + esc(m.b) + "\n" + esc(m.cap) + '<span class="t">' + m.t + "</span></div>"; }
+    else { d.className = "b in" + (m.sum ? " sum" : ""); d.innerHTML = esc(m.b) + '<span class="t">' + m.t + "</span>"; }
+    if (reduce) d.style.animation = "none";
+    return d;
+  }
+  function setStep(n) { stepsEls.forEach(function (li) { li.classList.toggle("on", Number(li.getAttribute("data-step")) <= n); }); }
+  function setHead() {
+    var n = NICHES[niche];
+    document.getElementById("shopName").textContent = n.shop;
+    document.getElementById("shopAv").textContent = n.av;
+    document.getElementById("ownerTime").textContent = n.time;
+    ownerText.innerHTML = n.owner;
+  }
+  function renderAll() {
+    var n = NICHES[niche];
+    setHead();
+    msgsBox.innerHTML = "";
+    n.msgs.forEach(function (m) { var b = bubble(m); b.style.animation = "none"; msgsBox.appendChild(b); });
+    setStep(5); ownerCard.classList.add("show");
+    msgsBox.scrollTop = msgsBox.scrollHeight;
+  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  async function play() {
+    var my = ++runId;
+    var n = NICHES[niche];
+    played = true;
+    if (reduce) { renderAll(); return; }
+    setHead();
+    msgsBox.innerHTML = ""; setStep(0); ownerCard.classList.remove("show");
+    for (var i = 0; i < n.msgs.length; i++) {
+      var m = n.msgs[i];
+      if (m.b) {
+        var typing = document.createElement("div");
+        typing.className = "typing"; typing.innerHTML = "<i></i><i></i><i></i>";
+        msgsBox.appendChild(typing); msgsBox.scrollTop = msgsBox.scrollHeight;
+        await wait(m.sum ? 1500 : 1100);
+        if (my !== runId) return;
+        typing.remove();
+        if (m.first) setStep(1);
+      } else {
+        await wait(i === 0 ? 500 : 1300);
+        if (my !== runId) return;
+      }
+      msgsBox.appendChild(bubble(m));
+      msgsBox.scrollTop = msgsBox.scrollHeight;
+      if (m.step) setStep(m.step);
+      if (m.done) { await wait(500); if (my !== runId) return; ownerCard.classList.add("show"); }
+    }
+  }
+  document.querySelectorAll(".niche").forEach(function (b) {
+    b.addEventListener("click", function () {
+      niche = b.getAttribute("data-niche");
+      document.querySelectorAll(".niche").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      play();
+    });
+  });
+  document.getElementById("replay").addEventListener("click", play);
+  renderAll();  // в покое переписка видна целиком
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting && !played) play(); });
+    }, { threshold: 0.45 });
+    io.observe(document.getElementById("s3").querySelector(".phone"));
+  }
+
+  // ── мини-график в кабинете ──
+  var bars = [31, 28, 34, 38, 44, 49, 46, 30, 33, 37, 43, 47, 55, 61];
+  var mb = document.getElementById("miniBars");
+  bars.forEach(function (v) { var s = document.createElement("span"); s.style.height = Math.round(v / 61 * 100) + "%"; mb.appendChild(s); });
+
+  // ── режимы ──
+  document.querySelectorAll("[data-mode]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var mode = b.getAttribute("data-mode");
+      document.querySelectorAll("[data-mode]").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      document.querySelectorAll(".mode-pane").forEach(function (p) { p.hidden = p.getAttribute("data-pane") !== mode; });
+    });
+  });
+
+  // ── калькулятор ──
+  var fmt = function (n) { return Math.round(n).toLocaleString("ru-RU").replace(/,/g, " "); };
+  function plural(n, a, b, c) { n = Math.abs(Math.round(n)); if (n % 10 === 1 && n % 100 !== 11) return a; if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) return b; return c; }
+  function calc() {
+    var msgs = +document.getElementById("c-msgs").value, miss = +document.getElementById("c-miss").value,
+        conv = +document.getElementById("c-conv").value, check = +document.getElementById("c-check").value;
+    document.getElementById("o-msgs").textContent = msgs;
+    document.getElementById("o-miss").textContent = miss + "%";
+    document.getElementById("o-conv").textContent = conv + "%";
+    document.getElementById("o-check").textContent = fmt(check) + " ₽";
+    var orders = msgs * 30 * miss / 100 * conv / 100;
+    document.getElementById("lost").textContent = fmt(orders * check) + " ₽";
+    var o = Math.round(orders);
+    document.getElementById("lostOrders").textContent = o >= 1 ? "Это около " + o + " " + plural(o, "заказа", "заказов", "заказов") + " в месяц" : "Меньше одного заказа в месяц";
+    document.getElementById("formula").textContent = msgs + " в день × 30 дней × " + miss + "% без быстрого ответа × " + conv + "% купили бы × " + fmt(check) + " ₽";
+  }
+  ["c-msgs", "c-miss", "c-conv", "c-check"].forEach(function (id) { document.getElementById(id).addEventListener("input", calc); });
+  calc();
+})();
+</script>
+</body>
+</html>
